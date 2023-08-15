@@ -26,7 +26,7 @@ jobs:
       - name: Yamllint check
         uses: frenck/action-yamllint@710dba577c3d3a4cf9124a2ed809cd71e7398530
         with:
-          config: ".github/workflows/.yamllint"
+          config: "./.github/workflows/.yamllint"
       
       - name: Ansible lint check
         uses: ansible/ansible-lint-action@v6
