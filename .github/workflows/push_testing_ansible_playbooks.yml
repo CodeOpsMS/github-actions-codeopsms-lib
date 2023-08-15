@@ -33,6 +33,9 @@ jobs:
 
       - name: Ansible playbook syntax check
         run: ansible-playbook playbooks/* --syntax-check
+      
+      - name: Ansible playbook check
+        run: ansible-playbook playbooks/* --check
 
       - name: Publish Test Results
         id: test-results
