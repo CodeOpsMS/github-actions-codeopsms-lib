@@ -1,0 +1,37 @@
+name: Ansible Playbook CI and Testing
+
+on:
+  workflow_call:
+
+jobs:
+  testing_ansible_playbooks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install software-properties-common
+          sudo apt-add-repository --yes --update ppa:ansible/ansible
+          sudo apt install ansible
+          ansible --version
+
+      - name: Yamllint check
+        uses: frenck/action-yamllint@710dba577c3d3a4cf9124a2ed809cd71e7398530    
+
+      - name: Publish Test Results
+        id: test-results
+        uses: EnricoMi/publish-unit-test-result-action@c8a70fdde92689bf574202595e1322d3a4de0987
+        if: always()
+        with:
+          job_summary: true
+          compare_to_earlier_commit: true
+
+      
+      
