@@ -28,6 +28,9 @@ jobs:
       - name: Ansible lint check
         uses: ansible/ansible-lint-action@v6
 
+      - name: Ansible playbook syntax check
+        run: ansible-playbook playbooks/* --syntax-check
+
       - name: Publish Test Results
         id: test-results
         uses: EnricoMi/publish-unit-test-result-action@c8a70fdde92689bf574202595e1322d3a4de0987
