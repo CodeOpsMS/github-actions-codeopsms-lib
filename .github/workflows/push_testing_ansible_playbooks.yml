@@ -32,10 +32,10 @@ jobs:
         uses: ansible/ansible-lint-action@v6
 
       - name: Ansible playbook syntax check
-        run: ansible-playbook playbooks/* --syntax-check
+        run: ansible-playbook playbooks/*.yml --syntax-check
       
       - name: Ansible playbook check
-        run: ansible-playbook playbooks/* --check
+        run: ansible-playbook playbooks/*.yml --check
 
       - name: Publish Test Results
         id: test-results
