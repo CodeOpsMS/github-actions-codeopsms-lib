@@ -1,0 +1,120 @@
+name: Test a ansible playbook with unit tests
+
+on:
+  workflow_call:
+    inputs:
+        python-version:
+            type: string
+            description: 'Python version'
+            required: true
+            default: '3.12'
+        ansible-playbook:
+            type: string
+            description: 'Ansible playbook'
+            required: true
+            default: 'ansible_start_nfa_server_dev_cloud.yml'
+        ansible-directory:
+            type: string
+            description: 'Ansible directory'
+            required: true
+            default: './playbooks'
+        ansible-inventory:
+            type: string
+            description: 'Ansible inventory'
+            required: true
+
+
+jobs:
+  testing_ansible_playbooks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Setup Python
+          uses: actions/setup-python@v5
+          with:
+            python-version: ${{ inputs.python-version }}
+
+        - name: Install ansible-core, yamllint and ansible-lint
+          run: |
+            python3 -m pip install yamllint
+            python3 -m pip install ansible-lint
+            python3 -m pip install ansible-core
+            python3 -m pip install pre-commit
+
+        - name: Create folder and file
+          run: |
+            mkdir -p ~/.ssh
+            touch ~/.ssh/known_hosts
+
+        - name: Adding Known Hosts
+          run: ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+        - name: Install SSH Key
+          uses: shimataro/ssh-key-action@d4fffb50872869abe2d9a9098a6d9c5aa7d16be4
+          with:
+            key: ${{ secrets.SSH_PRIVATE_KEY }}
+            known_hosts: ~/.ssh/known_hosts
+            name: id_rsa
+
+        - name: Create the public key
+          run: |
+            ssh-keygen -y -f ~/.ssh/id_rsa > ~/.ssh/id_rsa.pub
+
+        - name: Install ansible collections
+          run: |
+            ansible-galaxy collection install community.general
+            ansible-galaxy collection install community.docker
+            ansible-galaxy collection install ansible.posix
+
+        - name: Enforce pre-commit
+          run: pre-commit run --all-files
+
+        - name: Yamllint
+          run: |
+            yamllint .
+
+        - name: Ansible syntax check
+          uses: dawidd6/action-ansible-playbook@c97d71562fcba83cc1ea0602d5a77013427f7571
+          with:
+            # Required, playbook filepath
+            playbook: ${{ inputs.ansible-playbook }}
+            # Optional, directory where playbooks live
+            directory: ${{ inputs.ansible-directory }}
+            # Optional, encrypted vault password
+            vault_password: ${{secrets.VAULT_PASSWORD}}
+            # Optional, additional flags to pass to ansible-playbook
+            options: |
+              --syntax-check
+
+        - name: Run ansible-lint
+          run: ansible-lint . # uses: ansible/ansible-lint@v6
+
+        - name: Show folder and file
+          run: |
+            ls -la ~/.ssh
+            cat ~/.ssh/known_hosts
+            cat ~/.ssh/id_rsa
+
+        - name: Show github path
+          run: pwd
+
+        - name: Ansible check and diff test
+          uses: dawidd6/action-ansible-playbook@c97d71562fcba83cc1ea0602d5a77013427f7571
+          with:
+            # Required, playbook filepath
+            playbook: ${{ inputs.ansible-playbook }}
+            # Optional, directory where playbooks live
+            directory: ${{ inputs.ansible-directory }}
+            # Optional, literal inventory file contents
+            inventory: ${{ inputs.ansible-inventory }}
+            # Optional, encrypted vault password
+            vault_password: ${{secrets.VAULT_PASSWORD}}
+            # Optional, additional flags to pass to ansible-playbook
+            options: |
+              --check
+              --diff
+              -u root
